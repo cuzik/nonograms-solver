@@ -2,7 +2,7 @@ import pygame
 import time
 import random
 
-from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
+from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_SPACE
 
 # describe consts
 
@@ -14,43 +14,87 @@ Colors = {
     "full":      ( 51,  99,  42),
 }
 
-print(pygame.display.get_num_displays())
+carlos = 1
 
 class Board:
     def __init__(self, x_base, y_base, vertical, horizontal):
+        global carlos
+        self.number = carlos
+        carlos = carlos + 1
+
+        print(self.number)
+
         self.x_base = x_base
         self.y_base = y_base
         self.vertical = vertical
         self.horizontal = horizontal
+        self.fetness = 0
 
-        self.matrix_mirror = [[True for i in range(len(self.vertical))] for j in range(len(self.horizontal))]
+
+        self.matrix_mirror = [[random.choices([True, False])[0] for i in range(len(self.vertical))] for j in range(len(self.horizontal))]
 
     def shuffle(self):
-        for i in range(1):
+        # self.matrix_mirror = [[random.choices([True, False])[0] for i in range(len(self.vertical))] for j in range(len(self.horizontal))]
+        for i in range(10):
             x = random.randint(0,len(self.horizontal) -1)
             y = random.randint(0,len(self.vertical) -1)
 
-            self.matrix_mirror[x][y] = random.choices([True, False, None])[0]
+            self.matrix_mirror[x][y] = random.choices([True, False])[0]
 
+    def evaluate(self):
+        aux_horizontal = []
+        aux_vertical = []
 
+        for i in range(len(self.horizontal)):
+            count = 0
+            parcial = []
+            for j in range(len(self.vertical)):
+                if self.matrix_mirror[j][i]:
+                    count = count + 1
+                elif (self.matrix_mirror[j][i] == False or self.matrix_mirror[j][i] == None) and count != 0:
+                    parcial.append(count)
+                    count = 0
+            if len(parcial) == 0:
+                aux_horizontal.append([count])
+            else:
+                if count != 0:
+                    parcial.append(count)
+                aux_horizontal.append(parcial)
 
+        for i in range(len(self.vertical)):
+            count = 0
+            parcial = []
+            for j in range(len(self.horizontal)):
+                if self.matrix_mirror[i][j]:
+                    count = count + 1
+                elif (self.matrix_mirror[i][j] == False or self.matrix_mirror[i][j] == None) and count != 0:
+                    parcial.append(count)
+                    count = 0
+            if len(parcial) == 0:
+                aux_vertical.append([count])
+            else:
+                if count != 0:
+                    parcial.append(count)
+                aux_vertical.append(parcial)
 
+        if aux_horizontal == self.horizontal and aux_vertical == self.vertical:
+            print('>>>' + str(self.number) + '<<<')
+            return True
 
-
-
-
+        return False
 
 
 class Main:
     def __init__(self):
         self.border = 5
-        self.cell_border = 3
-        self.line_size = 2
+        self.cell_border = 2
+        self.line_size = 1
         self.game_run = True
-        self.cell_internal_size = 25
+        self.pause_game = False
+        self.cell_internal_size = 50
 
-        self.boards_horizontal = 5
-        self.boards_vertical = 2
+        self.boards_horizontal = 1
+        self.boards_vertical = 1
         self.cell_size = self.cell_internal_size + (2 * self.cell_border)
         self.cell_full_size = self.cell_size + self.line_size
 
@@ -132,6 +176,8 @@ class Main:
                 self.game_run = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 self.game_run = False
+            elif event.type == KEYDOWN and event.key == K_SPACE:
+                self.pause_game = not self.pause_game
 
     def draw_board(self, board):
         self.draw_horizontal_labels(board)
@@ -225,21 +271,25 @@ class Main:
         i = 0
 
         while self.game_run:
-            pygame.display.set_caption(str(i))
-
             self.get_events_draw()
-            self.set_backgroud()
 
-            for board in boards:
-                self.draw_board(board)
+            if not self.pause_game:
+                pygame.display.set_caption(str(i))
+                self.set_backgroud()
 
-            for board in boards:
-                board.shuffle()
 
-            # time.sleep(.1)
+                for board in boards:
+                    board.shuffle()
+                    if board.evaluate():
+                        self.pause_game = True
 
-            i = i + 1
-            pygame.display.flip()
+                for board in boards:
+                    self.draw_board(board)
+
+                # time.sleep(1)
+
+                i = i + 1
+                pygame.display.flip()
 
 
 if __name__ == "__main__":
